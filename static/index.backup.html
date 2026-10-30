@@ -1,0 +1,286 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeLab - Online Compiler</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #101827;
+      color: #edf2f7;
+    }
+
+    header {
+      padding: 18px 24px;
+      background: #172338;
+      border-bottom: 1px solid #34445d;
+    }
+
+    header h1 { margin: 0; font-size: 22px; }
+
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    select, button {
+      padding: 11px 16px;
+      border-radius: 6px;
+      border: 1px solid #46546b;
+      font-size: 15px;
+    }
+
+    select {
+      background: #1c293d;
+      color: white;
+    }
+
+    button {
+      background: #16a34a;
+      color: white;
+      border: 0;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .panel {
+      background: #172338;
+      border: 1px solid #34445d;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      resize: vertical;
+      border: 1px solid #34445d;
+      border-radius: 6px;
+      padding: 14px;
+      background: #0b1220;
+      color: #d9e7ff;
+      font: 14px/1.6 Consolas, monospace;
+    }
+
+    #code { min-height: 320px; }
+    #stdin { min-height: 75px; }
+    #output {
+      min-height: 120px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #b6f7c5;
+      font: 14px/1.6 Consolas, monospace;
+    }
+
+    #status { color: #a9bdd8; margin-bottom: 8px; }
+    .hint { color: #a9bdd8; font-size: 13px; }
+
+    @media (max-width: 600px) {
+      main { margin-top: 16px; }
+      #code { min-height: 250px; }
+      select, button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CodeLab — Online Compiler</h1>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <select id="language" aria-label="Programming language">
+        <option value="python">Python 3</option>
+        <option value="c">C</option>
+        <option value="cpp">C++</option>
+        <option value="java">Java</option>
+        <option value="javascript">JavaScript</option>
+      </select>
+      <button id="run">▶ Run Code</button>
+      <button id="clear" type="button">Clear output</button>
+    </div>
+
+    <section class="panel">
+      <label for="code">Source code</label>
+      <textarea id="code" spellcheck="false">print("Hello, world!")</textarea>
+      <p class="hint">Maximum source size: 20 KB</p>
+    </section>
+
+    <section class="panel">
+      <label for="stdin">Standard input (stdin)</label>
+      <textarea id="stdin" placeholder="Enter input for your program..."></textarea>
+    </section>
+
+    <section class="panel">
+      <label>Execution result</label>
+      <div id="status" role="status" aria-live="polite">Ready</div>
+      <pre id="output">Your output will appear here.</pre>
+    </section>
+  </main>
+
+  
+<script>
+  const language = document.getElementById("language");
+  const code = document.getElementById("code");
+  const stdin = document.getElementById("stdin");
+  const run = document.getElementById("run");
+  const status = document.getElementById("status");
+  const output = document.getElementById("output");
+
+  const examples = {
+    python: 'print("Hello, world!")',
+    c: '#include <stdio.h>\nint main(void) {\n    printf("Hello, world!\\n");\n    return 0;\n}',
+    cpp: '#include <iostream>\nint main() {\n    std::cout << "Hello, world!\\n";\n    return 0;\n}',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, world!");\n    }\n}',
+    javascript: 'console.log("Hello, world!");'
+  };
+
+  language.addEventListener("change", () => {
+    code.value = examples[language.value];
+    stdin.value = "";
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    output.textContent = "";
+    status.textContent = "Ready";
+  });
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  async function readJSON(response) {
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        typeof data.detail === "string"
+          ? data.detail
+          : "Request failed: HTTP " + response.status
+      );
+    }
+
+    return data;
+  }
+
+  run.addEventListener("click", async () => {
+    if (!code.value.trim()) {
+      status.textContent = "Please enter some code.";
+      return;
+    }
+
+    if (new Blob([code.value]).size > 1_000_000) {
+      status.textContent = "Source code exceeds 1 MB.";
+      return;
+    }
+
+    run.disabled = true;
+    status.textContent = "Submitting code...";
+    output.textContent = "";
+
+    try {
+      // Submit a new execution job.
+      const submitResponse = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language: language.value,
+          code: code.value,
+          stdin: stdin.value
+        })
+      });
+
+      const job = await readJSON(submitResponse);
+
+      if (!job.token) {
+        throw new Error("Execution service returned no job token.");
+      }
+
+      status.textContent = "Queued — waiting for execution...";
+
+      // Poll the result endpoint until execution finishes.
+      const maxAttempts = 60;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await sleep(1500);
+
+        const resultResponse = await fetch(
+          "/api/result/" + encodeURIComponent(job.token),
+          { cache: "no-store" }
+        );
+
+        const result = await readJSON(resultResponse);
+
+        if (result.done) {
+          status.textContent =
+            result.status +
+            (result.time ? " · " + result.time + "s" : "") +
+            (result.memory ? " · " + result.memory + " KB" : "");
+
+          const sections = [];
+
+          if (result.stdout) {
+            sections.push("Output:\n" + result.stdout);
+          }
+
+          if (result.compile_output) {
+            sections.push(
+              "Compilation / syntax diagnostics:\n" +
+              result.compile_output
+            );
+          }
+
+          if (result.stderr) {
+            sections.push("Runtime errors:\n" + result.stderr);
+          }
+
+          if (result.message) {
+            sections.push("Details:\n" + result.message);
+          }
+
+          output.textContent = sections.length
+            ? sections.join("\n\n")
+            : "(No output)";
+
+          return;
+        }
+
+        status.textContent = result.status || "Processing...";
+      }
+
+      status.textContent = "Still processing";
+      output.textContent =
+        "The result did not arrive within 90 seconds. " +
+        "The execution job may still be running. Try checking again later.";
+    } catch (error) {
+      status.textContent = "Execution failed";
+      output.textContent = error.message;
+      console.error("Compiler request failed:", error);
+    } finally {
+      run.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>

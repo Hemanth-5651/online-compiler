@@ -1,0 +1,1007 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>CodeLab - Free Online Code Editor</title>
+  <meta name="description"
+        content="Write, edit, and test code in a clean online coding workspace. Explore programming examples for Python, C, C++, Java, and JavaScript.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#000000">
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --green: #176b52;
+      --green-dark: #12523f;
+      --page: #000000;
+      --panel: #111111;
+      --panel-soft: #181818;
+      --border: #2a2a2a;
+      --text: #f1f5f3;
+      --muted: #a7b0ac;
+      --soft: #1d3029;
+      --input: #0a0a0a;
+      --editor-height: 520px;
+    }
+
+    body.light-theme {
+      color-scheme: light;
+      --page: #f4f7f6;
+      --panel: #ffffff;
+      --panel-soft: #f7f9f8;
+      --border: #dce5e1;
+      --text: #1e302a;
+      --muted: #6d7d76;
+      --soft: #eaf4ef;
+      --input: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--page);
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .topbar {
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 21px;
+      font-weight: 750;
+      letter-spacing: -0.6px;
+    }
+
+    .brand-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      color: white;
+      background: var(--green);
+      font-size: 20px;
+    }
+
+    .top-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-links a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .intro {
+      margin-bottom: 20px;
+    }
+
+    .intro h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 3vw, 32px);
+      letter-spacing: -1px;
+    }
+
+    .intro p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgb(25 55 42 / 4%);
+    }
+
+    .panel-header {
+      min-height: 60px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .panel-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select {
+      max-width: 100%;
+      padding: 9px 32px 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      background: var(--input);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .btn:hover {
+      background: var(--panel-soft);
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+
+    .btn-primary:hover {
+      background: var(--green-dark);
+    }
+
+    .btn:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 3px solid #8ccdb4;
+      outline-offset: 2px;
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    #editor {
+      width: 100%;
+      height: var(--editor-height);
+      min-height: 300px;
+    }
+
+    .editor-footer {
+      min-height: 34px;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 18px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 16px 2px 13px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .tab.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    .output-content {
+      min-height: var(--editor-height);
+      padding: 16px;
+    }
+
+    .output-pane {
+      display: none;
+    }
+
+    .output-pane.active {
+      display: block;
+    }
+
+    .empty-state {
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      background: var(--soft);
+      color: var(--green);
+      font-size: 24px;
+    }
+
+    .empty-state strong {
+      color: var(--text);
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      max-width: 290px;
+      margin: 0;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    textarea {
+      width: 100%;
+      color: var(--text);
+      background: var(--input);
+      min-height: 220px;
+      padding: 12px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .placeholder-output {
+      padding: 14px;
+      border-radius: 8px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 20px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9aa8a0;
+    }
+
+    .ad-placeholder {
+      margin-top: 22px;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #cbd8d1;
+      border-radius: 10px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .below-content {
+      margin-top: 28px;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .below-content h2 {
+      margin-top: 0;
+      font-size: 21px;
+    }
+
+    .below-content p {
+      max-width: 800px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 24px;
+      margin-top: 28px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    footer a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 10;
+      max-width: calc(100vw - 32px);
+      padding: 12px 16px;
+      border-radius: 9px;
+      background: #20372e;
+      color: white;
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+    }
+
+    #toast.visible {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    @media (max-width: 850px) {
+      main { padding: 16px; }
+
+      .workspace {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      #editor, .output-content {
+        min-height: 350px;
+        height: 350px;
+      }
+
+      .empty-state { min-height: 260px; }
+    }
+
+    @media (max-width: 480px) {
+      .topbar { padding: 0 14px; height: 58px; }
+      .top-links { gap: 10px; font-size: 12px; }
+      .brand { font-size: 19px; }
+      .intro p { font-size: 13px; }
+      .panel-header { padding: 10px; }
+      .toolbar { padding: 10px; }
+      .btn { padding: 9px 10px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="CodeLab home"
+       style="text-decoration:none;color:inherit">
+      <span class="brand-icon" aria-hidden="true">&lt;/&gt;</span>
+      <span>CodeLab</span>
+    </a>
+
+    <nav class="top-links" aria-label="Main navigation">
+      <a href="#compiler">Compiler</a>
+      <a href="#learn">Learn</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Online Code Editor</h1>
+      <p>Write code, explore programming, and build something great.</p>
+    </section>
+
+    <section class="workspace" id="compiler" aria-label="Code workspace">
+      <section class="panel" aria-label="Code editor panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Code Editor</div>
+            <div class="panel-subtitle">Write your program below</div>
+          </div>
+
+          <label>
+            <span class="panel-subtitle">Language</span><br>
+            <select id="language" aria-label="Select programming language">
+              <option value="python">Python 3</option>
+              <option value="c">C</option>
+              <option value="cpp">C++</option>
+              <option value="java">Java</option>
+              <option value="javascript">JavaScript</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn btn-primary" id="runButton" type="button">
+            ▶ Run Code
+          </button>
+          <button class="btn" id="clearButton" type="button">Clear</button>
+          <button class="btn" id="resetButton" type="button">Reset</button>
+          <span class="toolbar-spacer"></span>
+          <button class="btn" id="themeButton" type="button"
+                  aria-label="Toggle page and editor theme">☀</button>
+        </div>
+
+        <div id="editor" aria-label="Source code editor"></div>
+
+        <div class="editor-footer">
+          <span id="editorStatus">Initializing editor…</span>
+          <span id="cursorStatus">Ln 1, Col 1</span>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Program output panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Program Console</div>
+            <div class="panel-subtitle">View output and provide input</div>
+          </div>
+
+          <span class="status" id="runStatus">
+            <span class="status-dot"></span>
+            Not run
+          </span>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Console panels">
+          <button class="tab active" role="tab" aria-selected="true"
+                  data-tab="output">Output</button>
+          <button class="tab" role="tab" aria-selected="false"
+                  data-tab="input">Input</button>
+          <button class="tab" role="tab" aria-selected="false"
+                  data-tab="errors">Errors</button>
+        </div>
+
+        <div class="output-content">
+          <section class="output-pane active" id="pane-output"
+                   role="tabpanel">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">▶</div>
+              <strong>Your output will appear here</strong>
+              <p>Once the compiler is connected, run your program to see its result in this panel.</p>
+            </div>
+          </section>
+
+          <section class="output-pane" id="pane-input" role="tabpanel">
+            <label for="stdin" class="panel-title">Custom input (stdin)</label>
+            <p class="panel-subtitle" style="margin-bottom:12px">
+              Enter input your program may request.
+            </p>
+            <textarea id="stdin" placeholder="Type program input here…"></textarea>
+          </section>
+
+          <section class="output-pane" id="pane-errors" role="tabpanel">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">!</div>
+              <strong>No errors to display</strong>
+              <p>Compilation and runtime errors will be shown here after integration.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+
+    <div class="ad-placeholder" aria-label="Reserved advertising space">
+      Advertising space reserved — no ads are loaded
+    </div>
+
+    <section class="below-content" id="learn">
+      <h2>Code, test, and learn</h2>
+      <p>
+        CodeLab is being built as a simple online coding workspace for
+        learners and developers. Select a programming language, write a
+        program, and use the console to review its output. Programming
+        tutorials and language-specific learning resources can be added
+        here as the site grows.
+      </p>
+    </section>
+
+    <footer>
+      <span>© <span id="year"></span> CodeLab</span>
+      <span>Built for learning and coding</span>
+    </footer>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const MONACO_VERSION = "0.52.2";
+  const MONACO_BASE =
+    `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/`;
+
+  const starterCode = {
+    python: 'name = "World"\nprint("Hello,", name)\n',
+    c: '#include <stdio.h>\n\nint main(void) {\n    printf("Hello, World!\\n");\n    return 0;\n}\n',
+    cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}\n',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n',
+    javascript: 'const name = "World";\nconsole.log("Hello,", name);\n'
+  };
+
+  const monacoLanguage = {
+    python: "python",
+    c: "c",
+    cpp: "cpp",
+    java: "java",
+    javascript: "javascript"
+  };
+
+  const MAX_SOURCE_BYTES = 1_000_000;
+  const MAX_POLLS = 60;
+  const INITIAL_POLL_DELAY_MS = 300;
+  const MAX_POLL_DELAY_MS = 1000;
+
+  let editor = null;
+  let toastTimer = null;
+  let isDark = true;
+  let isRunning = false;
+
+  const languageSelect = document.getElementById("language");
+  const editorStatus = document.getElementById("editorStatus");
+  const cursorStatus = document.getElementById("cursorStatus");
+  const toast = document.getElementById("toast");
+  const runButton = document.getElementById("runButton");
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("visible");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(
+      () => toast.classList.remove("visible"),
+      3000
+    );
+  }
+
+  function setRunStatus(label) {
+    const status = document.getElementById("runStatus");
+    status.replaceChildren();
+
+    const dot = document.createElement("span");
+    dot.className = "status-dot";
+
+    const text = document.createTextNode(label);
+    status.append(dot, text);
+  }
+
+  function activateTab(name) {
+    document.querySelectorAll(".tab").forEach(button => {
+      const active = button.dataset.tab === name;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+
+    document.querySelectorAll(".output-pane").forEach(pane => {
+      pane.classList.toggle(
+        "active",
+        pane.id === `pane-${name}`
+      );
+    });
+  }
+
+  function showPaneContent(name, content, isError = false) {
+    const pane = document.getElementById(`pane-${name}`);
+    pane.replaceChildren();
+
+    if (!content) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+
+      const heading = document.createElement("strong");
+      heading.textContent =
+        name === "errors" ? "No errors reported" : "No program output";
+
+      const message = document.createElement("p");
+      message.textContent =
+        name === "errors"
+          ? "Your program did not report an error."
+          : "Your program completed without printing output.";
+
+      empty.append(heading, message);
+      pane.appendChild(empty);
+      return;
+    }
+
+    const pre = document.createElement("pre");
+    pre.textContent = content;
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.overflowWrap = "anywhere";
+    pre.style.fontFamily = "Consolas, 'Courier New', monospace";
+    pre.style.fontSize = "13px";
+    pre.style.lineHeight = "1.7";
+    pre.style.margin = "0";
+    pre.style.color = isError ? "#b42318" : "var(--text)";
+
+    pane.appendChild(pre);
+  }
+
+  function showExecutionDetails(result) {
+    const details = [];
+
+    if (result.time !== null && result.time !== undefined) {
+      details.push(`Execution time: ${result.time} seconds`);
+    }
+
+    if (result.memory !== null && result.memory !== undefined) {
+      details.push(`Memory used: ${result.memory} KB`);
+    }
+
+    return details.join("\n");
+  }
+
+  function parseErrorResponse(data, fallback) {
+    if (typeof data?.detail === "string") {
+      return data.detail;
+    }
+
+    if (Array.isArray(data?.detail)) {
+      return data.detail
+        .map(item => item.msg || JSON.stringify(item))
+        .join("\n");
+    }
+
+    return fallback;
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function runCode() {
+    if (!editor || isRunning) return;
+
+    const code = editor.getValue();
+    const language = languageSelect.value;
+    const stdin = document.getElementById("stdin").value;
+
+    if (!code.trim()) {
+      showToast("Please enter some code first.");
+      editor.focus();
+      return;
+    }
+
+    if (new Blob([code]).size > MAX_SOURCE_BYTES) {
+      showToast("Source code must be 1 MB or smaller.");
+      return;
+    }
+
+    isRunning = true;
+    runButton.disabled = true;
+    runButton.textContent = "Running…";
+    setRunStatus("Submitting");
+    showPaneContent("output", "");
+    showPaneContent("errors", "");
+    activateTab("output");
+
+    try {
+      // Submit the code to the existing FastAPI backend.
+      const submitResponse = await fetch("/api/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          language,
+          code,
+          stdin
+        })
+      });
+
+      const submitData = await submitResponse.json().catch(() => ({}));
+
+      if (!submitResponse.ok) {
+        throw new Error(
+          parseErrorResponse(submitData, "Could not submit your code.")
+        );
+      }
+
+      if (!submitData.token) {
+        throw new Error("The execution service returned no job token.");
+      }
+
+      setRunStatus("Queued");
+
+      // Poll the existing result endpoint until execution finishes.
+      let pollDelay = INITIAL_POLL_DELAY_MS;
+
+      for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
+       await sleep(pollDelay);
+       pollDelay = Math.min(pollDelay + 500, MAX_POLL_DELAY_MS);
+
+        const resultResponse = await fetch(
+          `/api/result/${encodeURIComponent(submitData.token)}`
+        );
+
+        const result = await resultResponse.json().catch(() => ({}));
+
+        if (!resultResponse.ok) {
+          throw new Error(
+            parseErrorResponse(result, "Could not retrieve the execution result.")
+          );
+        }
+
+        if (!result.done) {
+          setRunStatus(result.status || "Processing");
+          continue;
+        }
+
+        const status = result.status || "Unknown";
+        const stdout = result.stdout || "";
+        const stderr = result.stderr || "";
+        const compileOutput = result.compile_output || "";
+        const message = result.message || "";
+        const details = showExecutionDetails(result);
+
+        // Show stdout in Output.
+        const warningText =
+        status === "Accepted" && stderr
+            ? "\n\nWarnings:\n" + stderr
+            : "";
+
+        showPaneContent(
+        "output",
+        (stdout || (status === "Accepted"
+            ? "Program completed successfully with no output."
+            : "No standard output was produced.")) + warningText
+        );
+
+        // Show compiler diagnostics, runtime stderr and other failures.
+        const errorParts = [];
+
+        if (compileOutput) {
+          errorParts.push("Compilation output:\n" + compileOutput);
+        }
+
+        if (stderr) {
+            if (status === "Accepted") {
+                // A successful program can still write warnings to stderr.
+                errorParts.push("Warnings:\n" + stderr);
+            } else {
+                errorParts.push("Standard error:\n" + stderr);
+            }
+            }
+
+        if (message) {
+          errorParts.push("Message:\n" + message);
+        }
+
+        if (status !== "Accepted" && status !== "Unknown") {
+          errorParts.unshift("Execution status: " + status);
+        }
+
+        if (details) {
+          errorParts.push(details);
+        }
+
+        const errorText = errorParts.join("\n\n");
+        showPaneContent("errors", errorText, true);
+
+        if (status === "Accepted") {
+          setRunStatus("Success");
+          activateTab("output");
+        } else {
+          setRunStatus(status);
+          activateTab("errors");
+        }
+
+        return;
+      }
+
+      setRunStatus("Still processing");
+      showPaneContent(
+        "errors",
+         "No final result was received within about 2 minutes. " +
+         "The execution may still be running. Try again later.",
+        true
+      );
+      activateTab("errors");
+
+    } catch (error) {
+      setRunStatus("Failed");
+      showPaneContent(
+        "errors",
+        error.message || "An unexpected error occurred.",
+        true
+      );
+      activateTab("errors");
+    } finally {
+      isRunning = false;
+      runButton.disabled = false;
+      runButton.textContent = "▶ Run Code";
+    }
+  }
+
+  document.querySelectorAll(".tab").forEach(button => {
+    button.addEventListener("click", () => {
+      activateTab(button.dataset.tab);
+    });
+  });
+
+  document.getElementById("year").textContent =
+    new Date().getFullYear();
+
+  runButton.addEventListener("click", runCode);
+
+  document.getElementById("clearButton").addEventListener("click", () => {
+    if (editor) {
+      editor.setValue("");
+      editor.focus();
+    }
+  });
+
+  document.getElementById("resetButton").addEventListener("click", () => {
+    if (!editor) return;
+
+    editor.setValue(starterCode[languageSelect.value]);
+    editor.focus();
+    setRunStatus("Not run");
+    showPaneContent("output", "");
+    showPaneContent("errors", "");
+    activateTab("output");
+  });
+
+  document.getElementById("themeButton").addEventListener("click", event => {
+    if (!editor) return;
+
+    isDark = !isDark;
+    document.body.classList.toggle("light-theme", !isDark);
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+    monaco.editor.setTheme(isDark ? "vs-dark" : "vs");
+    event.currentTarget.textContent = isDark ? "☀" : "☾";
+    event.currentTarget.setAttribute("aria-pressed", String(!isDark));
+  });
+
+  languageSelect.addEventListener("change", () => {
+    if (!editor) return;
+
+    const language = languageSelect.value;
+    monaco.editor.setModelLanguage(
+      editor.getModel(),
+      monacoLanguage[language]
+    );
+    editor.setValue(starterCode[language]);
+    editor.focus();
+    setRunStatus("Not run");
+  });
+
+  window.MonacoEnvironment = {
+    getWorkerUrl: function () {
+      const workerSource =
+        `self.MonacoEnvironment = { baseUrl: '${MONACO_BASE}' };` +
+        `importScripts('${MONACO_BASE}vs/base/worker/workerMain.js');`;
+
+      return "data:text/javascript;charset=utf-8," +
+        encodeURIComponent(workerSource);
+    }
+  };
+
+  const loader = document.createElement("script");
+  loader.src = MONACO_BASE + "vs/loader.js";
+
+  loader.onload = () => {
+    require.config({
+      paths: { vs: MONACO_BASE + "vs" }
+    });
+
+    require(["vs/editor/editor.main"], () => {
+      editor = monaco.editor.create(
+        document.getElementById("editor"),
+        {
+          value: starterCode.python,
+          language: "python",
+          theme: "vs-dark",
+          automaticLayout: true,
+          minimap: { enabled: false },
+          fontSize: 14,
+          lineHeight: 22,
+          tabSize: 4,
+          insertSpaces: true,
+          scrollBeyondLastLine: false,
+          roundedSelection: true,
+          padding: { top: 14, bottom: 14 },
+          wordWrap: "off",
+          scrollbar: {
+            horizontal: "visible",
+            horizontalScrollbarSize: 14,
+            horizontalSliderSize: 14,
+            vertical: "auto"
+          },
+          suggestOnTriggerCharacters: true,
+          quickSuggestions: true
+        }
+      );
+
+      editor.onDidChangeCursorPosition(event => {
+        cursorStatus.textContent =
+          `Ln ${event.position.lineNumber}, Col ${event.position.column}`;
+      });
+
+      editorStatus.textContent = "Editor ready";
+      editor.focus();
+    }, error => {
+      console.error("Monaco initialization failed:", error);
+      editorStatus.textContent = "Editor failed to load";
+      showToast("Could not initialize Monaco. Check your internet connection.");
+    });
+  };
+
+  loader.onerror = () => {
+    editorStatus.textContent = "Editor failed to load";
+    showToast("Could not load Monaco. Check your internet connection.");
+  };
+
+  document.head.appendChild(loader);
+</script>
+
+</body>
+</html>

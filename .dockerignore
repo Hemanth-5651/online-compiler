@@ -1,0 +1,15 @@
+﻿.env
+.env.*
+!.env.example
+.venv/
+.venv*/
+venv/
+env/
+.git/
+__pycache__/
+*.py[cod]
+*.log
+.pytest_cache/
+.mypy_cache/
+requirements.backup.txt
+large_test.py
